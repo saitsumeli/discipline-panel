@@ -22,8 +22,11 @@ type SharedFocusRowProps = {
 };
 
 export default function SharedFocusRow({ sharedHabit }: SharedFocusRowProps) {
-  const { state, currentUser, updateSharedHabitStatus } = useAppState();
+  const { state, currentUser, endSharedHabit, updateSharedHabitStatus } = useAppState();
   const [now, setNow] = useState(() => new Date());
+  const [isEnding, setIsEnding] = useState(false);
+  const [endFeedback, setEndFeedback] = useState<string | null>(null);
+  const [endFeedbackTone, setEndFeedbackTone] = useState<"success" | "error">("success");
 
   useEffect(() => {
     if (sharedHabit.kind !== "quit") return;
@@ -43,6 +46,34 @@ export default function SharedFocusRow({ sharedHabit }: SharedFocusRowProps) {
   const isQuitHabit = sharedHabit.kind === "quit";
   const actionLabel = myStatus === "done" ? "Tamamlandı" : "Bugünü tamamla";
   const partnerUser = partnerSnapshot?.user;
+
+  const handleEndSharedHabit = async () => {
+    if (isEnding) return;
+
+    const shouldEnd = window.confirm(
+      "Bu ortak alışkanlığı bitirmek istediğine emin misin?"
+    );
+
+    if (!shouldEnd) return;
+
+    setIsEnding(true);
+    setEndFeedback(null);
+
+    try {
+      await endSharedHabit(sharedHabit.id);
+      setEndFeedbackTone("success");
+      setEndFeedback("Ortak alışkanlık aktif listeden kaldırıldı.");
+    } catch (error) {
+      setEndFeedbackTone("error");
+      setEndFeedback(
+        error instanceof Error
+          ? error.message
+          : "Ortak alışkanlık bitirilemedi. Lütfen tekrar dene."
+      );
+    } finally {
+      setIsEnding(false);
+    }
+  };
 
   return (
     <div className="panel-list-row rounded-[26px] px-4 py-4 transition hover:border-white/12 hover:bg-white/[0.035]">
@@ -135,6 +166,16 @@ export default function SharedFocusRow({ sharedHabit }: SharedFocusRowProps) {
         </div>
 
         <div className="flex max-w-full shrink-0 flex-wrap items-center gap-3 self-start xl:self-center">
+          <button
+            type="button"
+            disabled={isEnding}
+            onClick={() => {
+              void handleEndSharedHabit();
+            }}
+            className="rounded-xl border border-white/10 bg-transparent px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/16 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isEnding ? "Bitiriliyor..." : "Ortak alışkanlığı bitir"}
+          </button>
           {isQuitHabit ? (
             <button
               type="button"
@@ -157,6 +198,18 @@ export default function SharedFocusRow({ sharedHabit }: SharedFocusRowProps) {
           )}
         </div>
       </div>
+
+      {endFeedback ? (
+        <div
+          className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
+            endFeedbackTone === "success"
+              ? "border-emerald-400/10 bg-emerald-400/5 text-emerald-200"
+              : "border-rose-400/10 bg-rose-400/5 text-rose-200"
+          }`}
+        >
+          {endFeedback}
+        </div>
+      ) : null}
     </div>
   );
 }

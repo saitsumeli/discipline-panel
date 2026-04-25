@@ -84,6 +84,7 @@ type AppStateContextValue = {
   ) => Promise<void>;
   acceptSharedHabit: (sharedHabitId: string) => Promise<void>;
   declineSharedHabit: (sharedHabitId: string) => Promise<void>;
+  endSharedHabit: (sharedHabitId: string) => Promise<void>;
   updateSharedHabitStatus: (
     sharedHabitId: string,
     status: HabitTodayStatus
@@ -577,6 +578,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [authUserId, refreshState, state.sharedHabits]
   );
 
+  const endSharedHabit = useCallback(
+    async (sharedHabitId: string) => {
+      await archiveSharedHabitRecord(sharedHabitId);
+      await refreshState();
+    },
+    [refreshState]
+  );
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setAuthUserId("");
@@ -617,6 +626,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       proposeSharedHabit,
       acceptSharedHabit,
       declineSharedHabit,
+      endSharedHabit,
       updateSharedHabitStatus,
     }),
     [
@@ -651,6 +661,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       proposeSharedHabit,
       acceptSharedHabit,
       declineSharedHabit,
+      endSharedHabit,
       updateSharedHabitStatus,
     ]
   );
