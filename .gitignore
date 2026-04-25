@@ -147,6 +147,8 @@ vite.config.ts.timestamp-*
 
 # production
 build
+/build
+dist
 .vercel
 
 # misc
